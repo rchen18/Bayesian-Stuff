@@ -1,0 +1,20 @@
+model {
+	 for (l in 1:5) { # study level
+		for (j in 1:2) { # treatment group
+			for (i in 1:n[j,l]) { # individual observations; this structure enables that different studies and groups can have different sample sizes.
+			T[i,j,l] ~ dweib(gamma, beta[j,l]) # T[i,j,l] is time-to-event 
+			} # dweib(v, lambda)
+			beta[j,l] <- pow(lambda[j,l], -gamma)  # beta = (weib.scale)^(-gamma)
+			log(lambda[j,l]) <- eta[j,l]  # Weibull GLM with log-link
+		}
+		eta[1,l] <- eff.ovall[l] - eff.diff[l]
+		eta[2,l] <- eff.ovall[l] + eff.diff[l]
+	   eff.ovall[l] ~ dnorm(mu.ovall, tau.ovall)   # overall effect
+		eff.diff[l] ~ dnorm(mu.diff, tau.diff)  # difference between treatment groups
+	 } 
+	   gamma ~ dunif(0.5,2.5)
+	   mu.diff ~ dnorm(0,0.01)
+	   tau.diff ~ dgamma(0.001,0.001)
+	   mu.ovall ~ dnorm(0,0.01)
+	   tau.ovall ~ dgamma(0.001,0.001)
+ }
