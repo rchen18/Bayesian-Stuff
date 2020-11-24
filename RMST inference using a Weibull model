@@ -1,38 +1,35 @@
-# OpenBUGS codes
-
 # include censoring
-
+# the written strucute allows evaluations of RMST for different time points for each study 
 # write down the likelihood function
 model {
 	 for (l in 1:L) { # study level
 		for (j in 1:J) { # treatment group
 			for (i in 1:n[j,l]) { # individual observations; this structure enables that different studies and groups can have different sample sizes.
-			Tobs[i,j,l] ~ dweib(gamma, beta[j,l])C(Tcens[i,j,l],) # Tobs[i,j,l] is # time-to-event obs; Tvens[i,j,l] is time-to-cens 
+				Tobs[i,j,l] ~ dweib(gamma, beta[j,l])C(Tcens[i,j,l],) # Tobs[i,j,l] is # time-to-event obs; Tvens[i,j,l] is time-to-cens 
 			} # dweib(v, lambda)
 			beta[j,l] <- pow(lambda[j,l], -gamma)  # beta = (weib.scale)^(-gamma)
 			log(lambda[j,l]) <- eta[j,l]  # Weibull GLM with log-link
 		}
 		eta[1,l] <- eff.ovall[l] - eff.diff[l]
 		eta[2,l] <- eff.ovall[l] + eff.diff[l]
-	   	eff.ovall[l] ~ dnorm(mu.ovall, tau.ovall)   # overall effect
+	        eff.ovall[l] ~ dnorm(mu.ovall, tau.ovall)   # overall effect
 		eff.diff[l] ~ dnorm(mu.diff, tau.diff)  # difference between treatment groups
-	} 
-	for (t in 1:T) { # evaluate RMST
-		for (l in 1:L) { # study level
+	 } 
+	for (l in 1:L) { # study level
+			for (t in 1:tau.size[l]) { # evaluate RMST of the lth study for the tth time
 			for (j in 1:J) { # treatment group
 			RMST[j,l,t] <- lambda[j,l] * gammap(gamma.star, tk.star[j,l,t])
-			tk.star[j,l,t] <- beta[j,l]*tk.star2[t]
+			tk.star[j,l,t] <- beta[j,l]*tk.star2[l,t]
 			}
 		RMST.ovall[l,t] <- (RMST[1,l,t] + RMST[2,l,t]) / 2
 		RMST.diff[l,t] <- RMST[2,l,t] - RMST[1,l,t] 
+		tk.star2[l,t] <- pow(tau.mat[l,t],gamma)
 		}
-		tk.star2[t] <- pow(tau[t],gamma)
 	}
-	gamma ~ dunif(0.5,2.5)
-	gamma.star <- (1/gamma)+1
-	mu.diff ~ dnorm(0,0.01)
-	tau.diff ~ dgamma(0.001,0.001)
-	mu.ovall ~ dnorm(0,0.01)
-	tau.ovall ~ dgamma(0.001,0.001)
+	   gamma ~ dunif(0.5,2.5)
+	   gamma.star <- (1/gamma)+1
+	   mu.diff ~ dnorm(0,0.01)
+	   tau.diff ~ dgamma(0.001,0.001)
+	   mu.ovall ~ dnorm(0,0.01)
+	   tau.ovall ~ dgamma(0.001,0.001)
 }
-
